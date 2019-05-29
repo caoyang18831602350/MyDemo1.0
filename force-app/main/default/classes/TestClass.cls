@@ -4,6 +4,7 @@ public with sharing class TestClass {
         for (Integer x = 0;x<10;x++) 
         {
             i++;
+            System.debug('=======i:'+i);
         }
     }
 }
