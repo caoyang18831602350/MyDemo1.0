@@ -1,0 +1,21 @@
+生成自签名数字证书
+openssl genrsa -des3 -passout pass:12345 -out server.pass.key 2048
+openssl rsa -passin pass:12345 -in server.pass.key -out server.key
+openssl req -new -key server.key -out server.csr
+COUNTRY : CH
+STATE OR PROVINCE NAME : BEIJING
+LOCALITY NAME : BEIJING
+ORGANIZATION NAME : CELNET
+ORGANIZATION UNIT NAME : CELNET
+COMMON NAME : CY
+EMAIL ADDRESS : jimmy.cao@celnet.com.cn
+A challenge password:12345
+AN OPTIONAL COMPANY NAME : CELNET
+openssl x509 -req -sha256 -days 365 -in server.csr -signkey server.key -out server.crt
+
+
+
+
+openssl enc -aes-256-cbc -k DEMOJWT -P -md sha1 -nosalt
+key=B1FC13F639E05E2E08B4CB9E39DDA5DD26286F38C17833E514B91AA483E2FC20
+iv =722ED386BDB90182A4469690156CCB12
