@@ -5,9 +5,7 @@ public with sharing class TestClass {
         {
             i++;
             System.debug('=======i:'+i);
-            System.debug('=========================测试！！！！！！');
-            System.debug('12345678tredsdfghgfdsdg');
-            System.debug('======this time :' + System.now());
         }
+        System.debug('===========THIS TIME :' + System.now());
     }
 }
