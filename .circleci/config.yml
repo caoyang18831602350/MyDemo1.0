@@ -56,12 +56,7 @@ jobs:
             sfdx force:apex:test:run -c -d ~/junit -r junit --wait 5
       - store_test_results:
           path: ~/junit
-      - run:
-          name: deployment
-          command: |
-            sfdx force:source:convert -r force-app -d testDeploy
-            . cleanupDeploy.sh
-            sfdx force:mdapi:deploy -d testDeploy/ -u deploy -w 2
+      
        - run:
           name: Delete Useless Scratch Org
           command: |
