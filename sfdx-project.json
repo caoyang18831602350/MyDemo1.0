@@ -6,6 +6,6 @@
     }
   ],
   "namespace": "",
-  "sfdcLoginUrl": "https://caoyangdx-dev-ed.my.salesforce.com/services/oauth2/token",
+  "sfdcLoginUrl": "https://caoyangdx-dev-ed.my.salesforce.com",
   "sourceApiVersion": "45.0"
 }
