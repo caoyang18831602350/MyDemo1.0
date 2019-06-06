@@ -165,8 +165,8 @@ public with sharing class HighSeasRulePageController {
                     accIds.remove(workItem.ProcessInstance.TargetObjectId);
                 }
             }
-            /*************************************************************************/
-            for(Account acc : [SELECT Id,Name,PersonMobilePhone,Wechat__c,Latest_Contact_Day__c FROM Account WHERE Id IN: accIds])
+
+            for(Account acc : [SELECT Id,Name FROM Account WHERE Id IN: accIds])
             {
                 InnerAccount iAccount = new InnerAccount();
                 iAccount.isChecked = FALSE;
