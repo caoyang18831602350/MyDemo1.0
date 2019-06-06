@@ -1,0 +1,657 @@
+<!--
+	组件名：HighSeasRulePageComponent
+	功能：公海池规则配置页面的组件
+	作者：Jimmy cao 曹阳
+	时间：2018-09-17
+ -->
+<aura:component implements="flexipage:availableForAllPageTypes,force:appHostable,lightning:actionOverride" controller="HighSeasRulePageController">
+    <!--初始化方法-->
+	<aura:handler name="init" action="{!c.doInit}" value="{!this}"/>
+	<!-- 定义的变量 -->
+	<aura:attribute name="ProfileName" type="String" description="当前登录人的简档名称"/>
+	<aura:attribute name="recordId" type="String" description="获取当前记录id"/>
+	<aura:attribute name="departmentName" type="String" description="所属部门的名称"/>
+	<aura:attribute name="fieldMap" type="List" description="字段Map"/>
+	<aura:attribute name="operatorMap" type="List" description="运算符Map"/>
+	<aura:attribute name="conditionList" type="List" description="筛选条件List"/>
+	<aura:attribute name="logic" type="String" description="筛选逻辑"/>
+	<aura:attribute name="accountList" type="List" description="查询出来的客户数据的List"/>
+	<aura:attribute name="highSeasType" type="List" description="公海池类型List"/>
+	<aura:attribute name="options" type="List" default="[
+    {'label': '公海客户', 'value': '公海客户'},
+    {'label': '潜在客户', 'value': '潜在客户'},
+    {'label': '意向客户', 'value': '意向客户'},
+    {'label': '现有客户', 'value': '现有客户'},
+    ]"/>
+
+	<!-- datatable -->
+	<aura:attribute name="acccountList" type="List" />
+    <aura:attribute name="paginationList" type="List"/>
+    <aura:attribute name="checkedList" type="List"/>
+    <aura:attribute name="pageSize" type="Integer" default="5"/>
+ 	<aura:attribute name="totalSize" type="Integer"/>
+    <aura:attribute name="start" type="Integer" />
+ 	<aura:attribute name="end" type="Integer"/>
+    
+    <!-- This attribute will hold the update records from data table-->
+    <aura:attribute name="updatedRecord" type="Object[]" />
+
+	<!-- 定义的Loading -->
+	<lightning:spinner aura:id="mySpinner" variant="brand" />
+
+	<lightning:card variant="narrow" title="">
+		<div style="width: 100%;text-align: center;">
+			<div class="slds-button-group-row" role="group">
+				<lightning:button variant="Neutral" label="增加条件" onclick="{!c.AddLine}"/>
+				<lightning:button variant="Neutral" label="删除条件" onclick="{!c.DelLine}"/>
+				<lightning:button variant="Neutral" label="搜索" onclick="{!c.SeachData}"/>
+				<lightning:button variant="Neutral" label="立即执行" onclick="{!c.ToHighSeas}"/>
+				<aura:if isTrue="{!v.ProfileName == '系统管理员' || v.ProfileName == 'System Administrator' || v.ProfileName == '咨询顾问'}">
+					<lightning:button variant="Neutral" label="保存规则" onclick="{!c.DoSaveRule}"/>
+				</aura:if>
+			</div>
+		</div>
+		<div class="slds-section slds-is-open" id="title_div">
+			<h3 class="slds-section__title slds-theme_shade">
+			    <span class="slds-truncate slds-p-horizontal_small" title="Section Title">客户类型选择</span>
+			</h3>
+			<div aria-hidden="false" class="slds-section__content" id="expando-unique-id" style="height: 5rem;">
+				<div style="width: 35%;margin-left: 10rem;float: left;">
+			 		<lightning:combobox aura:id="highSeasRuleName" label="客户类型" name="progress" placeholder="--请选择--"  required="true" options="{!v.options}"/>
+				</div>
+				<div style="width: 35%;margin-right: 10rem;float: right;">
+			 		<lightning:input type="Text" label="所有人" aura:id="ReturnReason" maxlength="255" required="true"/>
+				</div>
+				<div style="width: 82%;;margin-left: 10rem;float: left;display: none;">
+			 		<lightning:input type="Text" label="邮件通知地址(多个地址逗号分隔)" aura:id="noticeAddress" maxlength="255" required="true" value="123456789"/>
+				</div>
+			</div>
+		</div>
+		<div class="slds-section slds-is-open" id="title_div">
+			<h3 class="slds-section__title slds-theme_shade">
+			    <span class="slds-truncate slds-p-horizontal_small" title="Section Title">设置规则明细</span>
+			</h3>
+			<div aria-hidden="false" class="slds-section__content" id="expando-unique-id">
+				<!-- 创建table的tr -->
+	            <div class="slds-table_edit_container slds-is-relative" style="width: 49%;display: inline-block;vertical-align:top;">
+	                <table class="slds-table slds-table_bordered slds-table_resizable-cols slds-table_fixed-layout slds-no-cell-focus slds-table_edit" role="grid">
+	                    <thead>
+	                        <tr class="slds-line-height_reset">
+	                            <th scope="col" style="width: 5%;">
+	                                <div class="slds-th__action slds-th__action_form">
+	                                    <ui:inputCheckbox aura:id="productAllbox"  change="{!c.SelectAll}"/>
+	                                </div>
+	                            </th>
+	                            <th scope="col" style="width: 8%;">
+	                                <div class="slds-th__action slds-th__action_form" style="margin:0 auto;width: 100%;">
+	                                    <span class="slds-truncate">序号</span>
+	                                </div>
+	                            </th>
+	                            <th scope="col" style="width: 29%;">
+	                                <div class="slds-th__action slds-th__action_form" style="margin:0 auto;width: 100%;">
+	                                    <span class="slds-truncate">字段</span>
+	                                </div>
+	                            </th>
+	                            <th scope="col" style="width: 29%;">
+	                                <div class="slds-th__action slds-th__action_form" style="margin:0 auto;width: 100%;">
+	                                    <span class="slds-truncate">运算符</span>
+	                                </div>
+	                            </th>
+	                            <th scope="col" style="width: 29%;">
+	                                <div class="slds-th__action slds-th__action_form" style="margin:0 auto;width: 100%;">
+	                                    <span class="slds-truncate">值</span>
+	                                </div>
+	                            </th>
+	                        </tr>
+	                    </thead>
+	                    <!-- 循环table的td -->
+	                    <tbody>
+	                        <!-- aura:iteration 页面循环 -->
+	                        <aura:iteration items="{!v.conditionList}" var="obj" indexVar="sNo">
+	                            <tr class="slds-hint-parent">
+	                                <td class="slds-cell-edit" role="gridcell">
+	                                	<div style="margin:0 auto;width: 100%;">
+		                                    <!-- 这里注意当前版本 lightning标准的复选框 后台拿不到值 -->
+		                                    <ui:inputCheckbox aura:id="productbox" value="{!obj.checkbox}"/>
+		                                </div>
+	                                </td>
+	                                <td class="slds-cell-edit" role="gridcell">
+	                                	<div style="margin:0 auto;width: 100%;">
+		                                	<span class="slds-truncate">{!obj.num}</span>
+		                                </div>
+	                                </td>
+	                                <td class="slds-cell-edit" role="gridcell">
+	                                	<div style="margin:0 auto;width: 100%;">
+		                                    <span class="slds-grid slds-grid_align-spread">
+		                                        <span class="slds-truncate">
+		                                            <div class="slds-truncate">
+		                                                <ui:inputSelect value="{!obj.fieldsName}" change="{!c.OnFieldChange}">
+		                                                    <ui:inputSelectOption text="" label="--请选择--"/>
+		                                                    <aura:iteration items="{!v.fieldMap}" var="field" indexVar="key">
+			                                                    <ui:inputSelectOption text="{!field.key}" label="{!field.value}"/>
+			                                                </aura:iteration>
+		                                                </ui:inputSelect>
+		                                            </div>
+		                                        </span>
+		                                    </span>
+		                                </div>
+	                                </td>
+	                                <td class="slds-cell-edit" role="gridcell">
+	                                	<div style="margin:0 auto;width: 100%;">
+		                                    <span class="slds-grid slds-grid_align-spread">
+		                                        <span class="slds-truncate">
+		                                            <div class="slds-truncate">
+		                                                <ui:inputSelect value="{!obj.operator}">
+		                                                    <ui:inputSelectOption text="" label="--请选择--"/>
+		                                                    <aura:iteration items="{!v.operatorMap}" var="operator" indexVar="key">
+			                                                    <ui:inputSelectOption text="{!operator.key}" label="{!operator.value}"/>
+			                                                </aura:iteration>
+		                                                </ui:inputSelect>
+		                                            </div>
+		                                        </span>
+		                                    </span>
+		                                </div>
+	                                </td>
+	                                <td class="slds-cell-edit" role="gridcell">
+	                                	<div style="width: 100%;display:inline-block;">
+								            <aura:if isTrue="{!obj.fieldsType == 'BOOLEAN'}">
+	                                			<ui:inputSelect value="{!obj.fieldsValue}">
+		                                            <ui:inputSelectOption text="" label="--请选择--"/>
+                                                    <aura:iteration items="{!obj.selectOp}" var="operator" indexVar="key">
+	                                                    <ui:inputSelectOption text="{!operator.key}" label="{!operator.value}"/>
+	                                                </aura:iteration>
+                                                </ui:inputSelect>
+                                                <aura:set attribute="else">
+                                                	<aura:if isTrue="{!or(obj.fieldsType == 'PICKLIST' ,obj.fieldsType == 'MULTIPICKLIST')}">
+														<div class="slds-form-element">
+															<div class="slds-form-element__control">
+																<div class="slds-combobox_container slds-size_small">
+																	<div aura:id="dropdown{!obj.num}" onclick="{!c.OpenDropdown}" onmouseleave="{!c.CloseDropDown}" class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-close" aria-expanded="true" aria-haspopup="listbox" role="combobox">
+																		<div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right" role="none">
+																			<input type="text" readonly="true" value="{!obj.fieldsValue}" style="display: none;" />
+																			<input type="text" id="{!'condition'+obj.num}" class="slds-input slds-combobox__input slds-combobox__input-value"
+																			placeholder="--请选择--" readonly="true" value="{!obj.fieldsValueLabel}"/>
+																			<span class="slds-icon_container slds-icon-utility-down slds-input__icon slds-input__icon_right" title="Down icon">
+																				<lightning:icon iconName="utility:down" size="xx-small" class="slds-icon-text-default"/>
+																				<span class="slds-assistive-text">Down icon</span>
+																			</span>
+																		</div>
+																		<div id="listbox-unique-id" role="listbox">
+																			<ul class="slds-listbox slds-listbox_vertical slds-dropdown slds-dropdown_fluid" role="presentation" style="height: 200px;overflow:auto;">
+																				<aura:iteration items="{!obj.selectOp}" var="item" indexVar="ind">
+																					<li onclick="{!c.SelectOption}"  id="{!item.key+'#BP#'+item.isChecked+'#BP#'+obj.num}"  role="presentation" class="slds-listbox__item">
+																						<div id="{!'listbox-option-unique-id-'+(ind+1)}"
+																						class="{!item.isChecked==true?'slds-media slds-listbox__option slds-listbox__option_plain slds-media_small slds-media_center slds-is-selected':'slds-media slds-listbox__option slds-listbox__option_plain slds-media_small slds-media_center '}" role="option">
+																							<span class="slds-media__figure">
+																								<lightning:icon iconName="utility:check" size="xx-small" class="slds-listbox__icon-selected"/>
+																							</span>
+																							<span class="slds-media__body">
+																								<span class="slds-truncate" title="{!item.key+':'+item.value}"> {!item.value}</span>
+																							</span>
+																						</div>
+																					</li>
+																				</aura:iteration>
+																			</ul>
+																		</div>
+																	</div>
+																</div>
+															</div>
+														</div>
+											            <aura:set attribute="else">
+											            	<aura:if isTrue="{!or(obj.fieldsType == 'DATE' ,obj.fieldsType == 'DATETIME')}">
+												            	<ui:inputDate aura:id="expdate" class="field" value="{!obj.fieldsValue}" displayDatePicker="true" />   
+												            	<aura:set attribute="else">
+						                                			<ui:inputText class="field" value="{!obj.fieldsValue}"/>
+												            	</aura:set>   
+												            </aura:if>
+											        	</aura:set>
+										        	</aura:if>
+											    </aura:set>
+								            </aura:if>
+	                                	</div>
+	                                </td>
+	                            </tr>
+	                        </aura:iteration>
+	                    </tbody>
+	                </table>
+				</div>
+				<div style="width: 45%;display: inline-block;vertical-align:top;margin-left: 5%;">
+					<div style="display:inline-block;">
+						<strong>筛选逻辑：</strong>
+					</div>
+					<div style="display:inline-block;width: 65%;">
+						<ui:inputText class="field" value="{!v.logic}" />
+					</div>
+					<img src="{!$Resource.ScreeningLogicalPicture}"/>
+				</div>
+			</div>
+		</div>
+	<!-- </lightning:card>
+	<lightning:card variant="narrow"> -->
+		<div class="slds-section slds-is-open" id="title_div">
+			<h3 class="slds-section__title slds-theme_shade">
+				<span class="slds-truncate slds-p-horizontal_small" title="Section Title">查询结果(共2条)</span>
+			</h3>
+			<div aria-hidden="false" class="slds-section__content" id="expando-unique-id">
+				<!-- 创建table的tr -->
+		        <div class="slds-table_edit_container slds-is-relative" style="display: inline-block;vertical-align:top;">
+		            <table class="slds-table slds-table_bordered slds-table_resizable-cols slds-table_fixed-layout slds-no-cell-focus slds-table_edit" role="grid">
+		                <thead>
+		                    <tr class="slds-line-height_reset">
+		                        <th scope="col">
+		                            <div class="slds-th__action slds-th__action_form" style="text-align: center;width: 100%;">
+		                                <span class="slds-truncate">客户名</span>
+		                            </div>
+		                        </th>
+		                        <th scope="col">
+		                            <div class="slds-th__action slds-th__action_form" style="text-align: center;width: 100%;">
+		                                <span class="slds-truncate">一级行业</span>
+		                            </div>
+		                        </th>
+		                        <th scope="col">
+		                            <div class="slds-th__action slds-th__action_form" style="text-align: center;width: 100%;">
+		                                <span class="slds-truncate">二级行业</span>
+		                            </div>
+		                        </th>
+		                        <th scope="col">
+		                            <div class="slds-th__action slds-th__action_form" style="text-align: center;width: 100%;">
+		                                <span class="slds-truncate">客户性质</span>
+		                            </div>
+		                        </th>
+		                        <th scope="col">
+		                            <div class="slds-th__action slds-th__action_form" style="text-align: center;width: 100%;">
+		                                <span class="slds-truncate">客户等级</span>
+		                            </div>
+		                        </th>
+		                        <th scope="col">
+		                            <div class="slds-th__action slds-th__action_form" style="text-align: center;width: 100%;">
+		                                <span class="slds-truncate">客户类型</span>
+		                            </div>
+		                        </th>
+		                        <th scope="col">
+		                            <div class="slds-th__action slds-th__action_form" style="text-align: center;width: 100%;">
+		                                <span class="slds-truncate">
+		                                	<lightning:button variant="base" label="全部添加退回列表" onclick="{!c.CheckedAllShowData}"/>
+		                            	</span>
+		                            </div>
+		                        </th>
+		                    </tr>
+		                </thead>
+		                <!-- 循环table的td -->
+		                <tbody>
+		                	<aura:if isTrue="{!v.totalSize == null}">
+		                		<!-- <tr>
+		                            <td colspan="7">
+		                            	<div style="width: 100%;text-align: center;">
+		                            		<h2>暂无结果</h2>
+		                                </div>
+		                            </td>
+		                		</tr> -->
+		                		<tr class="slds-hint-parent">
+		                            <td class="slds-cell-edit" role="gridcell">
+		                            	<div style="width: 100%;">
+		                                	<span class="slds-truncate">
+		                                		<div style="margin:0 auto;width: 100%;text-align: left;white-space: normal;">
+													北京雨花石云计算科技股份有限公司
+												</div>
+											</span>
+		                                </div>
+		                            </td>
+		                            <td class="slds-cell-edit" role="gridcell">
+		                            	<div style="width: 100%;">
+		                                	<span class="slds-truncate">
+		                                		<div style="margin:0 auto;width: 100%;text-align: left;white-space: normal;">
+													其他
+												</div>
+											</span>
+		                                </div>
+		                            </td>
+		                            <td class="slds-cell-edit" role="gridcell">
+		                            	<div style="width: 100%;">
+		                                	<span class="slds-truncate">
+		                                		<div style="margin:0 auto;width: 100%;text-align: left;white-space: normal;">
+													其他
+												</div>
+											</span>
+		                                </div>
+		                            </td>
+		                            <td class="slds-cell-edit" role="gridcell">
+		                            	<div style="width: 100%;">
+		                                	<span class="slds-truncate">
+		                                		<div style="margin:0 auto;width: 100%;text-align: left;white-space: normal;">
+													私营企业
+												</div>
+											</span>
+		                                </div>
+		                            </td>
+		                            <td class="slds-cell-edit" role="gridcell">
+		                            	<div style="width: 100%;">
+		                                	<span class="slds-truncate">
+		                                		<div style="margin:0 auto;width: 100%;text-align: left;white-space: normal;">
+													 一般客户
+												</div>
+											</span>
+		                                </div>
+		                            </td>
+		                            <td class="slds-cell-edit" role="gridcell">
+		                            	<div style="width: 100%;">
+		                                	<span class="slds-truncate">
+		                                		<div style="margin:0 auto;width: 100%;text-align: left;white-space: normal;">
+													 现有客户
+												</div>
+											</span>
+		                                </div>
+		                            </td>
+		                            <td class="slds-cell-edit" role="gridcell">
+		                            	<div style="width: 100%;">
+											<lightning:buttonIcon disabled="true"  iconName="utility:add" alternativeText="Settings" onclick="{!c.AddReturnData}"/>
+		                                </div>
+		                            </td>
+		                        </tr>
+		                		<tr class="slds-hint-parent">
+		                            <td class="slds-cell-edit" role="gridcell">
+		                            	<div style="width: 100%;">
+		                                	<span class="slds-truncate">
+		                                		<div style="margin:0 auto;width: 100%;text-align: left;white-space: normal;">
+													河北省石家庄市XX纺织公司
+												</div>
+											</span>
+		                                </div>
+		                            </td>
+		                            <td class="slds-cell-edit" role="gridcell">
+		                            	<div style="width: 100%;">
+		                                	<span class="slds-truncate">
+		                                		<div style="margin:0 auto;width: 100%;text-align: left;white-space: normal;">
+													纺织
+												</div>
+											</span>
+		                                </div>
+		                            </td>
+		                            <td class="slds-cell-edit" role="gridcell">
+		                            	<div style="width: 100%;">
+		                                	<span class="slds-truncate">
+		                                		<div style="margin:0 auto;width: 100%;text-align: left;white-space: normal;">
+													
+												</div>
+											</span>
+		                                </div>
+		                            </td>
+		                            <td class="slds-cell-edit" role="gridcell">
+		                            	<div style="width: 100%;">
+		                                	<span class="slds-truncate">
+		                                		<div style="margin:0 auto;width: 100%;text-align: left;white-space: normal;">
+													私营企业
+												</div>
+											</span>
+		                                </div>
+		                            </td>
+		                            <td class="slds-cell-edit" role="gridcell">
+		                            	<div style="width: 100%;">
+		                                	<span class="slds-truncate">
+		                                		<div style="margin:0 auto;width: 100%;text-align: left;white-space: normal;">
+													 一般客户
+												</div>
+											</span>
+		                                </div>
+		                            </td>
+		                            <td class="slds-cell-edit" role="gridcell">
+		                            	<div style="width: 100%;">
+		                                	<span class="slds-truncate">
+		                                		<div style="margin:0 auto;width: 100%;text-align: left;white-space: normal;">
+													 现有客户
+												</div>
+											</span>
+		                                </div>
+		                            </td>
+		                            <td class="slds-cell-edit" role="gridcell">
+		                            	<div style="width: 100%;">
+											<lightning:buttonIcon disabled="false"  iconName="utility:add" alternativeText="Settings" onclick="{!c.AddReturnData}"/>
+		                                </div>
+		                            </td>
+		                        </tr>
+		                	</aura:if>
+		                	<aura:if isTrue="{!v.totalSize != null}">
+			                    <!-- aura:iteration 页面循环 -->
+			                    <aura:iteration items="{!v.paginationList}" var="obj">
+			                        <tr class="slds-hint-parent">
+			                            <td class="slds-cell-edit" role="gridcell">
+			                            	<div style="width: 100%;">
+			                                	<span class="slds-truncate">
+			                                		<div style="margin:0 auto;width: 100%;text-align: left;white-space: normal;">
+														{!obj.accountData.Name}
+													</div>
+												</span>
+			                                </div>
+			                            </td>
+			                            <td class="slds-cell-edit" role="gridcell">
+			                            	<div style="width: 100%;">
+			                                	<span class="slds-truncate">
+			                                		<div style="margin:0 auto;width: 100%;text-align: left;white-space: normal;">
+														{!obj.accountData.PersonMobilePhone}
+													</div>
+												</span>
+			                                </div>
+			                            </td>
+			                            <td class="slds-cell-edit" role="gridcell">
+			                            	<div style="width: 100%;">
+			                                	<span class="slds-truncate">
+			                                		<div style="margin:0 auto;width: 100%;text-align: left;white-space: normal;">
+														{!obj.accountData.Wechat__c}
+													</div>
+												</span>
+			                                </div>
+			                            </td>
+			                            <td class="slds-cell-edit" role="gridcell">
+			                            	<div style="width: 100%;">
+			                                	<span class="slds-truncate">
+			                                		<div style="margin:0 auto;width: 100%;text-align: left;white-space: normal;">
+														{!obj.accountData.Latest_Contact_Day__c}
+													</div>
+												</span>
+			                                </div>
+			                            </td>
+			                            <td class="slds-cell-edit" role="gridcell">
+			                            	<div style="width: 100%;">
+			                                	<span class="slds-truncate">
+			                                		<div style="margin:0 auto;width: 100%;text-align: left;white-space: normal;">
+														 
+													</div>
+												</span>
+			                                </div>
+			                            </td>
+			                            <td class="slds-cell-edit" role="gridcell">
+			                            	<div style="width: 100%;">
+			                                	<span class="slds-truncate">
+			                                		<div style="margin:0 auto;width: 100%;text-align: left;white-space: normal;">
+														 
+													</div>
+												</span>
+			                                </div>
+			                            </td>
+			                            <td class="slds-cell-edit" role="gridcell">
+			                            	<div style="width: 100%;">
+    											<lightning:buttonIcon disabled="{!obj.isChecked==true}" value="{!obj.accountData.Id}" iconName="utility:add" alternativeText="Settings" onclick="{!c.AddReturnData}"/>
+			                                </div>
+			                            </td>
+			                        </tr>
+			                    </aura:iteration>
+		                	</aura:if>
+		                </tbody>
+		            </table>
+                    <div style="text-align: center;">
+						<lightning:button label="上一页" disabled="{! or(v.start == 1,v.start == null)}"  onclick="{!c.previous}" />
+						<lightning:button label="下一页" disabled="{! or(v.end >= v.totalSize,v.end == null)}" onclick="{!c.next}" />
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="slds-section slds-is-open" id="title_div">
+			<h3 class="slds-section__title slds-theme_shade">
+				<span class="slds-truncate slds-p-horizontal_small" title="Section Title">退回选中(共1条)</span>
+			</h3>
+			<div aria-hidden="false" class="slds-section__content" id="expando-unique-id">
+				<!-- 创建table的tr -->
+		        <div class="slds-table_edit_container slds-is-relative" style="display: inline-block;vertical-align:top;">
+		            <table class="slds-table slds-table_bordered slds-table_resizable-cols slds-table_fixed-layout slds-no-cell-focus slds-table_edit" role="grid">
+		                <thead>
+		                    <tr class="slds-line-height_reset">
+		                        <th scope="col">
+		                            <div class="slds-th__action slds-th__action_form" style="text-align: center;width: 100%;">
+		                                <span class="slds-truncate">客户名</span>
+		                            </div>
+		                        </th>
+		                        <th scope="col">
+		                            <div class="slds-th__action slds-th__action_form" style="text-align: center;width: 100%;">
+		                                <span class="slds-truncate">一级行业</span>
+		                            </div>
+		                        </th>
+		                        <th scope="col">
+		                            <div class="slds-th__action slds-th__action_form" style="text-align: center;width: 100%;">
+		                                <span class="slds-truncate">二级行业</span>
+		                            </div>
+		                        </th>
+		                        <th scope="col">
+		                            <div class="slds-th__action slds-th__action_form" style="text-align: center;width: 100%;">
+		                                <span class="slds-truncate">客户性质</span>
+		                            </div>
+		                        </th>
+		                        <th scope="col">
+		                            <div class="slds-th__action slds-th__action_form" style="text-align: center;width: 100%;">
+		                                <span class="slds-truncate">客户等级</span>
+		                            </div>
+		                        </th>
+		                        <th scope="col">
+		                            <div class="slds-th__action slds-th__action_form" style="text-align: center;width: 100%;">
+		                                <span class="slds-truncate">客户类型</span>
+		                            </div>
+		                        </th>
+		                        <th scope="col">
+		                            <div class="slds-th__action slds-th__action_form" style="width: 100%;">
+		                                <span class="slds-truncate">
+			                                <lightning:button variant="base" label="全部移出退回列表" onclick="{!c.ClearReturnData}"/>
+			                            </span>
+		                            </div>
+		                        </th>
+		                    </tr>
+		                </thead>
+		                <!-- 循环table的td -->
+		                <tbody>
+		                	<aura:if isTrue="{!v.checkedList.length == 0}">
+		                		<!-- <tr>
+		                            <td colspan="7">
+		                            	<div style="width: 100%;text-align: center;">
+		                            		<h2>暂无结果</h2>
+		                                </div>
+		                            </td>
+		                		</tr> -->
+		                		<tr class="slds-hint-parent">
+		                            <td class="slds-cell-edit" role="gridcell">
+		                            	<div style="width: 100%;">
+		                                	<span class="slds-truncate">
+		                                		<div style="margin:0 auto;width: 100%;text-align: left;white-space: normal;">
+													北京雨花石云计算科技股份有限公司
+												</div>
+											</span>
+		                                </div>
+		                            </td>
+		                            <td class="slds-cell-edit" role="gridcell">
+		                            	<div style="width: 100%;">
+		                                	<span class="slds-truncate">
+		                                		<div style="margin:0 auto;width: 100%;text-align: left;white-space: normal;">
+													其它
+												</div>
+											</span>
+		                                </div>
+		                            </td>
+		                            <td class="slds-cell-edit" role="gridcell">
+		                            	<div style="width: 100%;">
+		                                	<span class="slds-truncate">
+		                                		<div style="margin:0 auto;width: 100%;text-align: left;white-space: normal;">
+													其它
+												</div>
+											</span>
+		                                </div>
+		                            </td>
+		                            <td class="slds-cell-edit" role="gridcell">
+		                            	<div style="width: 100%;">
+		                                	<span class="slds-truncate">
+		                                		<div style="margin:0 auto;width: 100%;text-align: left;white-space: normal;">
+													私营企业
+												</div>
+											</span>
+		                                </div>
+		                            </td>
+		                            <td class="slds-cell-edit" role="gridcell">
+		                            	<div style="width: 100%;">
+		                                	<span class="slds-truncate">
+		                                		<div style="margin:0 auto;width: 100%;text-align: left;white-space: normal;">
+													 一般客户
+												</div>
+											</span>
+		                                </div>
+		                            </td>
+		                            <td class="slds-cell-edit" role="gridcell">
+		                            	<div style="width: 100%;">
+		                                	<span class="slds-truncate">
+		                                		<div style="margin:0 auto;width: 100%;text-align: left;white-space: normal;">
+													 现有客户
+												</div>
+											</span>
+		                                </div>
+		                            </td>
+		                            <td class="slds-cell-edit" role="gridcell">
+		                            	<div style="width: 100%;">
+											<lightning:buttonIcon   iconName="utility:add" alternativeText="Settings" onclick="{!c.AddReturnData}"/>
+		                                </div>
+		                            </td>
+		                        </tr>
+		                	</aura:if>
+		                	<aura:if isTrue="{!v.checkedList.length > 0}">
+			                    <!-- aura:iteration 页面循环 -->
+			                    <aura:iteration items="{!v.checkedList}" var="obj">
+			                        <tr class="slds-hint-parent">
+			                            <td class="slds-cell-edit" role="gridcell">
+			                            	<div style="width: 100%;">
+			                                	<span class="slds-truncate">{!obj.accountData.Name}</span>
+			                                </div>
+			                            </td>
+			                            <td class="slds-cell-edit" role="gridcell">
+			                            	<div style="width: 100%;">
+			                                	<span class="slds-truncate">{!obj.accountData.PersonMobilePhone}</span>
+			                                </div>
+			                            </td>
+			                            <td class="slds-cell-edit" role="gridcell">
+			                            	<div style="width: 100%;">
+			                                	<span class="slds-truncate">{!obj.accountData.Wechat__c}</span>
+			                                </div>
+			                            </td>
+			                            <td class="slds-cell-edit" role="gridcell">
+			                            	<div style="width: 100%;">
+			                                	<span class="slds-truncate">{!obj.accountData.Latest_Contact_Day__c}</span>
+			                                </div>
+			                            </td>
+			                            <td class="slds-cell-edit" role="gridcell">
+			                            	<div style="width: 100%;">
+			                                	 
+			                                </div>
+			                            </td>
+			                            <td class="slds-cell-edit" role="gridcell">
+			                            	<div style="width: 100%;">
+			                                	 
+			                                </div>
+			                            </td>
+			                            <td class="slds-cell-edit" role="gridcell">
+			                            	<div style="width: 100%;">
+    											<lightning:buttonIcon  iconName="utility:close" alternativeText="Settings" onclick="{!c.RemoveReturnData}"/>
+			                                </div>
+			                            </td>
+			                        </tr>
+			                    </aura:iteration>
+		                	</aura:if>
+		                </tbody>
+		            </table>
+				</div>
+			</div>
+		</div>
+	</lightning:card>
+</aura:component>

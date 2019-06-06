@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>AccountPoolStyle__c</fullName>
+    <externalId>false</externalId>
+    <label>所属公海</label>
+    <required>false</required>
+    <trackFeedHistory>false</trackFeedHistory>
+    <type>Picklist</type>
+    <valueSet>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>华北</fullName>
+                <default>false</default>
+                <label>华北</label>
+            </value>
+            <value>
+                <fullName>华东</fullName>
+                <default>false</default>
+                <label>华东</label>
+            </value>
+            <value>
+                <fullName>华南</fullName>
+                <default>false</default>
+                <label>华南</label>
+            </value>
+            <value>
+                <fullName>公司</fullName>
+                <default>false</default>
+                <label>公司</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>
