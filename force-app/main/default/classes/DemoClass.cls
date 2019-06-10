@@ -5,6 +5,6 @@ public with sharing class DemoClass {
 
     public void ShowSomething()
     {
-        System.debug('=============SHOW SOMETHING');
+        System.debug('=============SHOW SOMETHING！！！');
     }
 }
