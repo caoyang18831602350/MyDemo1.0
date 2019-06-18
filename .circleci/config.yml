@@ -17,7 +17,13 @@ machine:
 
 dependencies:
   override:
-    openssl enc -nosalt -aes-256-cbc -d -in assets/server.key.enc -out assets/server.key -base64 -K $DECRYPTION_KEY -iv $DECRYPTION_IV
+    - wget -qO- $DX_CLI_URL | tar xJf -
+    - ./sfdx/install
+    - mkdir tmp
+    - echo 'make hub key'
+    - echo $HUB_SERVER_KEY_HEX | xxd -r -ps >> assets/server.key
+    - openssl rsa -in assets/server.key -check -noout
+    - sfdx force:auth:jwt:grant --clientid $HUB_CONSUMER_KEY --jwtkeyfile assets/server.key --username $HUB_SFDC_USER --setdefaultdevhubusername -a hub
 
 
 test:
