@@ -67,4 +67,4 @@ deployment:
  override:
    - sfdx force:source:convert -r force-app -d testDeploy
    - . cleanupDeploy.sh
-   - sfdx force:mdapi:deploy -d testDeploy/ -u deploy -w 2
+   - sfdx force:mdapi:deploy -d testDeploy/ -u yc.caoyang@dev.com.cn -w 2
