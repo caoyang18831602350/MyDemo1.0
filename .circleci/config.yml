@@ -64,10 +64,10 @@ jobs:
       - run:
           name: deploy to DevHub
           command: |
-            echo 'Running tests'
-            sfdx force:source:convert -r force-app -d testDeploy
-            . cleanupDeploy.sh
-            sfdx force:mdapi:deploy -d testDeploy/ -u yc.caoyang@dev.com.cn -w 2
+            echo 'deploy to DevHub'
+            mkdir mdapioutput
+            sfdx force:source:convert -d mdapioutput/
+            sfdx force:mdapi:deploy -d mdapioutput/ -u yc.caoyang@dev.com.cn -w 2
 
 ### Uncomment the following if performing deployments
 # deployment:
